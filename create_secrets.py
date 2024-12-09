@@ -27,14 +27,58 @@ def lambda_handler(event, context):
     results = []
     
     for suffix in secret_suffixes:
+
         full_secret_name = f"{secret_name}{suffix}"
-        secret_value = {"key": "Ceci est une variable provisoire "}
+
         
+    
+        # Load password configuration from JSON file
+        config_file_path = 'password_config.json'  # Replace with your file path
+
+        # Check and perform actions based on substrings
+        if suffix == '_apikey' :
+            config_file_path = 'walletkey_config.json'  # Replace with your file path
+        elif suffix == '_walletkey' :
+            config_file_path = 'apikey_config.json'  # Replace with your file path
+        else:
+            config_file_path = 'seed_config.json'  # Replace with your file path
+            print(f"No specific action for secret: {secret_name}")
+
+
+        try:
+            with open(config_file_path, 'r') as file:
+                password_config = json.load(file)
+            logger.info("Password configuration loaded: %s", password_config)
+        except Exception as e:
+            logger.error("Failed to load password configuration: %s", str(e))
+            return {
+                'statusCode': 500,
+                'body': "Error loading password configuration."
+            }
+    
+        # Extract parameters for password generation
+        password_params = {
+            "PasswordLength": password_config.get("PasswordLength", 32),
+            "ExcludeNumbers": password_config.get("ExcludeNumbers", False),
+            "ExcludeUppercase": password_config.get("ExcludeUppercase", False),
+            "ExcludeLowercase": password_config.get("ExcludeLowercase", False),
+            "IncludeSpace": password_config.get("IncludeSpace", False),
+            "RequireEachIncludedType": password_config.get("RequireEachIncludedType", True),
+        }
+
+        passwd  = secrets_manager_client.get_random_password(**password_params)
+
+        # Create the payload with the specific key
+        secret_payload = {
+            "key": passwd['RandomPassword']  # Replace "walletkey" with the specific key you want
+        }
+
+
         try:
             # Créer un secret
             response = secrets_manager_client.create_secret(
                 Name=full_secret_name,
-                SecretString=json.dumps(secret_value)
+                SecretString=json.dumps(secret_payload)
             )
             logger.info(f"Secret '{full_secret_name}' créé avec succès : {response}")
             results.append({
