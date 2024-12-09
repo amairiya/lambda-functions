@@ -1,0 +1,8 @@
+{
+    "PasswordLength": 52,
+    "ExcludeNumbers": true,
+    "ExcludeUppercase": false,
+    "ExcludeLowercase": false,
+    "IncludeSpace": false,
+    "RequireEachIncludedType": true
+}

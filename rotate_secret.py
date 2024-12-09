@@ -10,7 +10,6 @@ def lambda_handler(event, context):
     arn = event['SecretId']
     token = event['ClientRequestToken']
     step = event['Step']
-    secret_name = arn.split(":")[-1]
 
     # Setup the client
     service_client = boto3.client('secretsmanager')
@@ -43,6 +42,18 @@ def create_secret(service_client, arn, token):
     # Load password configuration from JSON file
     config_file_path = 'password_config.json'  # Replace with your file path
 
+    secret_name = arn.split(":")[-1]
+    # Check and perform actions based on substrings
+    if '_walletkey' in secret_name:
+        config_file_path = 'walletkey_config.json'  # Replace with your file path
+    elif '_apikey' in secret_name:
+        config_file_path = 'apikey_config.json'  # Replace with your file path
+    elif 'seed' in secret_name:
+        config_file_path = 'seed_config.json'  # Replace with your file path
+    else:
+        print(f"No specific action for secret: {secret_name}")
+
+
     try:
         with open(config_file_path, 'r') as file:
             password_config = json.load(file)
@@ -70,9 +81,21 @@ def create_secret(service_client, arn, token):
     except service_client.exceptions.ResourceNotFoundException:
         # Generate a random password
         passwd  = service_client.get_random_password(**password_params)
-        # Put the secret
-        service_client.put_secret_value(SecretId=arn, ClientRequestToken=token, SecretString=passwd['RandomPassword'], VersionStages=['AWSPENDING'])
 
+        # Create the payload with the specific key
+        secret_payload = {
+            "key": passwd['RandomPassword']  # Replace "walletkey" with the specific key you want
+        }
+
+        # # Put the secret
+        # service_client.put_secret_value(SecretId=arn, ClientRequestToken=token, SecretString=passwd['RandomPassword'], VersionStages=['AWSPENDING'])
+        # Store the updated secret
+        service_client.put_secret_value(
+            SecretId=arn,
+            ClientRequestToken=token,
+            SecretString=json.dumps(secret_payload),
+            VersionStages=['AWSPENDING']
+        )
 
 def set_secret(service_client, arn, token):
     print("No database user credentials to update...")
