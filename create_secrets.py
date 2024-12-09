@@ -23,12 +23,12 @@ def lambda_handler(event, context):
     secrets_manager_client = boto3.client('secretsmanager')
     
     # Liste des noms de secrets à créer
-    secret_suffixes = ['_secret1', '_secret2', '_secret3']
+    secret_suffixes = ['_apikey', '_walletkey', '_seed']
     results = []
     
     for suffix in secret_suffixes:
         full_secret_name = f"{secret_name}{suffix}"
-        secret_value = {"example_key": f"example_value_for_{suffix}"}
+        secret_value = {"key": "Ceci est une variable provisoire "}
         
         try:
             # Créer un secret
